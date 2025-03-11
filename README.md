@@ -103,6 +103,9 @@ Dify-Plus，该名字不是说比 Dify 项目牛的意思，意思是想说比 D
 ## 启动方式（源码）
 见文档：[部署详细步骤（源码）](https://github.com/YFGaia/dify-plus/wiki/%E9%83%A8%E7%BD%B2%E8%AF%A6%E7%BB%86%E6%AD%A5%E9%AA%A4%EF%BC%88%E6%BA%90%E7%A0%81%E9%83%A8%E7%BD%B2%EF%BC%89)
 
+## 用户问的较多的问题
+见文档：[Q&A](https://github.com/YFGaia/dify-plus/wiki/Q&A)
+
 
 ## 相关配置说明
 - Dify 相关配置说明：https://docs.dify.ai/zh-hans/getting-started/install-self-hosted/environments
