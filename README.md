@@ -131,10 +131,10 @@ decoded_str = decoded_bytes.decode('utf-8')
 print(decoded_str)
 ```
 2. 微信二维码：
-<img width="342" alt="image" src="https://github.com/user-attachments/assets/b5aa106e-4bd9-40d7-925f-05c3f5265ef6" />
+<img width="200" alt="image" src="https://github.com/user-attachments/assets/b5aa106e-4bd9-40d7-925f-05c3f5265ef6" />
 
 ### 请作者喝咖啡~
-<img width="120" alt="image" src="https://github.com/user-attachments/assets/9a1ce3d4-3101-46eb-8a72-0a39db5b836b" />
+<img width="200" alt="image" src="https://github.com/user-attachments/assets/9a1ce3d4-3101-46eb-8a72-0a39db5b836b" />
 
 
 
