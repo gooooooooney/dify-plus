@@ -123,8 +123,15 @@ Dify-Plus，该名字不是说比 Dify 项目牛的意思，意思是想说比 D
 - 906631095@qq.com
 
 ### 微信交流群
-
-<img width="120" alt="0318" src="https://github.com/user-attachments/assets/8291d7c6-a5d7-4a52-99d7-ab7540fe0de8" />
+1. 防止广告进群，添加微信，输入以下代码执行结果
+```python
+encoded_str = "5Yqg5YWlZGlmeS1wbHVz5Lqk5rWB576kMgo="
+decoded_bytes = base64.b64decode(encoded_str)
+decoded_str = decoded_bytes.decode('utf-8')
+print(decoded_str)
+```
+2. 微信二维码：
+<img width="342" alt="image" src="https://github.com/user-attachments/assets/b5aa106e-4bd9-40d7-925f-05c3f5265ef6" />
 
 ### 请作者喝咖啡~
 <img width="120" alt="image" src="https://github.com/user-attachments/assets/9a1ce3d4-3101-46eb-8a72-0a39db5b836b" />
