@@ -67,6 +67,7 @@ func RegisterTables() {
 		gaia.AppRequestTestBatch{},
 		gaia.AppRequestTest{},
 		// Extend gaia model
+		gaia.SystemIntegration{}, // Extend System Integration
 	)
 	if err != nil {
 		global.GVA_LOG.Error("register table failed", zap.Error(err))

@@ -1,6 +1,7 @@
 const translation = {
   sidebar: {
-    appCenter: 'ศูนย์แอป',
+    appCenter: 'ศูนย์รับสมัครงาน',
+    withDingTalk: 'เข้าสู่ระบบโดยใช้ DingTalk',
   },
   appCenter: {
     description: 'นี่คือศูนย์แอป คุณสามารถดูแอปที่จัดประเภทและใช้งานได้ที่นี่',

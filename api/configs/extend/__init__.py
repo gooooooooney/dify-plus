@@ -32,21 +32,6 @@ class ExtendInfo(BaseSettings):
         default=None,
     )
 
-    NEXT_PUBLIC_DING_TALK_AGENT_ID: Optional[str] = Field(
-        description="钉钉原企业内部应用AgentId",
-        default=None,
-    )
-
-    NEXT_PUBLIC_DING_TALK_CORP_ID: Optional[str] = Field(
-        description="钉钉Client ID (原 AppKey 和 SuiteKey)",
-        default=None,
-    )
-
-    NEXT_PUBLIC_DING_TALK_CORP_SECRET: Optional[str] = Field(
-        description="钉钉Client Secret (原 AppSecret 和 SuiteSecret)	",
-        default=None,
-    )
-
     EMAIL_DOMAIN: Optional[str] = Field(
         description="邮箱域名",
         default=None,
@@ -60,6 +45,11 @@ class ExtendInfo(BaseSettings):
     RMB_TO_USD_RATE: Optional[decimal.Decimal] = Field(
         description="人民币兑美元汇率",
         default="7.26",
+    )
+
+    DEFAULT_LANGUAGE: Optional[str] = Field(
+        description="默认语言",
+        default="zh-Hans",
     )
 
 

@@ -1,6 +1,7 @@
 const translation = {
   sidebar: {
     appCenter: '應用中心',
+    withDingTalk: '使用 钉钉 登录',
   },
   app: {
     Uncategorized: '未分類',

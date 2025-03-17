@@ -39,7 +39,7 @@ func (i *DBApi) InitDB(c *gin.Context) {
 
 	// 二开部分：新增同步管理员账号
 	user := system.UserExtendService{}
-	user.SyncUser()
+	go user.SyncUser()
 
 	response.OkWithMessage("自动创建数据库成功", c)
 }

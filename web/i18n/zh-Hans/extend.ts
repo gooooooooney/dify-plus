@@ -1,6 +1,7 @@
 const translation = {
   sidebar: {
     appCenter: '应用中心',
+    withDingTalk: '使用 钉钉 登录',
   },
   appCenter: {
     description: '以下是应用中心，你可以在这里看到分类好的应用，进行使用',

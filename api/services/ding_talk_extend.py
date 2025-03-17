@@ -1,8 +1,9 @@
 import json
 import logging
 import time
-
+import secrets
 import requests
+from pypinyin import lazy_pinyin
 from alibabacloud_dingtalk.oauth2_1_0 import models as dingtalkoauth_2__1__0_models
 from alibabacloud_dingtalk.oauth2_1_0.client import Client as dingtalkoauth2_1_0Client
 from alibabacloud_tea_openapi import models as open_api_models
@@ -14,14 +15,11 @@ from extensions.ext_database import db
 from libs.helper import extract_remote_ip
 from models.account import Account, AccountIntegrate
 from services.account_service import AccountService, RegisterService, TenantService
+from models.system_extend import SystemIntegrationExtend, SystemIntegrationClassify
 from services.account_service_extend import TenantExtendService
 
 logger = logging.getLogger(__name__)
-
-ACCESS_TOKEN = {
-    "time": 0,
-    "token": "",
-}
+DINGTALK_ACCOUNT_TOKEN = { "time": 0, "token": "" }
 
 
 class DingTalkService:
@@ -38,21 +36,52 @@ class DingTalkService:
         return dingtalkoauth2_1_0Client(config)
 
     @classmethod
+    def get_user_token(cls, code: str) -> (str, str):
+        # get token
+        client = cls.create_client()
+        integration: SystemIntegrationExtend = (
+            db.session.query(SystemIntegrationExtend).filter(
+                SystemIntegrationExtend.status == True,
+                SystemIntegrationExtend.classify == SystemIntegrationClassify.SYSTEM_INTEGRATION_DINGTALK).first()
+        )
+        if integration is None:
+            return "", "尚未配置钉钉登录"
+        get_access_token_request = dingtalkoauth_2__1__0_models.GetUserTokenRequest(
+            client_secret=integration.decodeSecret(),
+            client_id=integration.app_key,
+            grant_type="authorization_code",
+            code=code,
+        )
+        #
+        response = client.get_user_token(get_access_token_request)
+        if response.status_code == 200:
+            return response.body.access_token, ""
+        else:
+            return "", response.body
+
+    @classmethod
     def get_access_token(cls) -> (str, str):
-        global ACCESS_TOKEN
-        if ACCESS_TOKEN["time"] > time.time():
-            return ACCESS_TOKEN["token"], ""
+        global DINGTALK_ACCOUNT_TOKEN
+        if DINGTALK_ACCOUNT_TOKEN["time"] > time.time():
+            return DINGTALK_ACCOUNT_TOKEN["token"], ""
+        integration: SystemIntegrationExtend = (
+            db.session.query(SystemIntegrationExtend).filter(
+                SystemIntegrationExtend.status == True,
+                SystemIntegrationExtend.classify == SystemIntegrationClassify.SYSTEM_INTEGRATION_DINGTALK).first()
+        )
+        if integration is None:
+            return "", "尚未配置钉钉登录"
         # get token
         client = cls.create_client()
         get_access_token_request = dingtalkoauth_2__1__0_models.GetAccessTokenRequest(
-            app_secret=dify_config.NEXT_PUBLIC_DING_TALK_CORP_SECRET,
-            app_key=dify_config.NEXT_PUBLIC_DING_TALK_CORP_ID,
+            app_secret=integration.decodeSecret(),
+            app_key=integration.app_key,
         )
         try:
             token_request = client.get_access_token(get_access_token_request)
             if token_request.status_code == 200:
-                ACCESS_TOKEN["token"] = token_request.body.access_token
-                ACCESS_TOKEN["time"] = int(time.time()) + 3600
+                DINGTALK_ACCOUNT_TOKEN["token"] = token_request.body.access_token
+                DINGTALK_ACCOUNT_TOKEN["time"] = int(time.time()) + 3600
                 return token_request.body.access_token, ""
             else:
                 return "", token_request.body
@@ -63,55 +92,39 @@ class DingTalkService:
             return "", "Failed to retrieve token"
 
     @classmethod
-    def get_user_info(cls, code: str) -> (str, str):
-        oa = dify_config.OAUTH2_CLIENT_URL
-        host = "https://oapi.dingtalk.com/topapi/v2/user"
-        token, err = cls.get_access_token()
-        if err != "":
-            return "", f"Failed to obtain token: {err}"
-        response = requests.post(
-            f"{host}/getuserinfo?access_token={token}",
-            json={
-                "code": code,
-            },
-        )
-        # Check the response status code
-        if response.status_code != 200:
-            return "", f"Request failed, status code: {response.status_code}"
-        # Print the response content
-        req = response.json()
-        if req["errcode"] != 0:
-            return "", "Request failed: " + req["errmsg"]
+    def auto_create_user(cls, userid: str) -> (str, str):
+        dingTalkToken, err = cls.get_access_token()
         responses = requests.post(
-            f'{oa}/serv/?c=user&a=getUserInfoByUserId&userId={req["result"]["userid"]}',
-            json={
-                "userid": req["result"]["userid"],
-            },
+            f'https://oapi.dingtalk.com/topapi/v2/user/get?access_token={dingTalkToken}',
+            json={ "userid": userid },
         )
         # Check the response status code
         if responses.status_code != 200:
             return "", f"Request for user information failed, status code: {responses.status_code}"
         reqs = responses.json()
-        if reqs["code"] != 200 and len(reqs["data"]) > 0:
-            return "", "Request for user information failed: " + json.dumps(req) + " " + json.dumps(reqs)
+        if reqs["errcode"] != 0:
+            return "", "Request for user information failed: " + userid + " " + json.dumps(reqs)
         # Check if the user exists
-        user = reqs["data"][0]
-        integrate: AccountIntegrate = (
-            db.session.query(AccountIntegrate).filter(AccountIntegrate.open_id == user["userName"]).first()
+        username = reqs["result"]['name']
+        email = f"{"".join(lazy_pinyin(username))}@{dify_config.EMAIL_DOMAIN}"
+        if "email" in reqs["result"] and len(reqs["result"]["email"]):
+            email = reqs["result"]["email"]
+        account: Account = (
+            db.session.query(Account).filter(Account.email == email).first()
         )
-        if integrate is None:
+        if account is None:
             # registered user
             try:
+                # generate random password
+                new_password = secrets.token_urlsafe(16)
                 account = RegisterService.register(
-                    email=f"{user['userName']}@{dify_config.EMAIL_DOMAIN}",
-                    open_id=user["userName"],
-                    name=user["name"],
-                    provider="oauth2",
-                    password=None,
+                    email=email,
+                    name=username,
+                    password=new_password,
+                    language=dify_config.DEFAULT_LANGUAGE,
                 )
             except EOFError as a:
-                logging.info(f"register user error: {str(a)}， info {json.loads(user)}")
-                return "", "register error"
+                return "", f"register user error: {str(a)}， info {json.loads(reqs)}"
 
             tenant_extend_service = TenantExtendService
             super_admin_id = tenant_extend_service.get_super_admin_id().id
@@ -122,9 +135,66 @@ class DingTalkService:
                 )
                 if isCreate:
                     TenantService.switch_tenant(account, super_admin_tenant_id)
-        else:
-            account: Account = db.session.query(Account).filter(Account.id == integrate.account_id).first()
         # token jwt
         token = AccountService.login(account, ip_address=extract_remote_ip(request))
+        return token, ""
+
+    @classmethod
+    def user_third_party(cls, code: str) -> (str, str):
+        userToken, err = cls.get_user_token(code)
+
+        if err != "":
+            return "", f"Failed to obtain token: {err}"
+        response = requests.get(
+            f"https://api.dingtalk.com/v1.0/contact/users/me",
+            headers={ "x-acs-dingtalk-access-token": userToken },
+        )
+        # Check the response status code
+        if response.status_code != 200:
+            return "", f"Request failed, status code: {response.status_code}, msg: {response.text}"
+        # Print the response content
+        req = response.json()
+        if "statusCode" in req.keys() and req["statusCode"] != 200:
+            return "", f"Request failed,  msg: {req.message}"
+        # 提取userid
+        dingTalkToken, err = cls.get_access_token()
+        unionIdResponse = requests.post(
+            f"https://oapi.dingtalk.com/topapi/user/getbyunionid?access_token={dingTalkToken}",
+            json={ "unionid": req["unionId"] }
+        )
+        # Check the response status code
+        if unionIdResponse.status_code != 200:
+            return "", f"unionIdResponse failed, status code: {unionIdResponse.status_code}, msg: {unionIdResponse.text}"
+        # Print the response content
+        unionIdReq = unionIdResponse.json()
+        if unionIdReq["errcode"] != 0:
+            return "", f"Request failed,  msg: {unionIdReq["errmsg"]}"
+
+        token, err = cls.auto_create_user(unionIdReq["result"]["userid"])
+        if len(err) > 0:
+            return "", "Request failed: " + err
+
+        return f"{dify_config.CONSOLE_WEB_URL}/explore/apps-center-extend?console_token={token.access_token}&&refresh_token={token.refresh_token}", ""
+
+    @classmethod
+    def get_user_info(cls, code: str) -> (str, str):
+        host = "https://oapi.dingtalk.com/topapi/v2/user"
+        token, err = cls.get_access_token()
+        if err != "":
+            return "", f"Failed to obtain token: {err}"
+        response = requests.post(
+            f"{host}/getuserinfo?access_token={token}",
+            json={ "code": code },
+        )
+        # Check the response status code
+        if response.status_code != 200:
+            return "", f"Request failed, status code: {response.status_code}"
+        # Print the response content
+        req = response.json()
+        if req["errcode"] != 0:
+            return "", "Request failed: " + req["errmsg"]
+        token, err = cls.auto_create_user(req["result"]["userid"])
+        if len(err) != 0:
+            return "", "Request failed: " + err
 
         return f"{dify_config.CONSOLE_WEB_URL}/explore/apps-center-extend?console_token={token.access_token}&&refresh_token={token.refresh_token}", ""

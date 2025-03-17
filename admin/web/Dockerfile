@@ -7,7 +7,7 @@ RUN yarn config set registry https://registry.npmmirror.com \
     && yarn \
     && yarn build
 
-FROM nginx:alpine AS base
+FROM nginx:alpine
 LABEL MAINTAINER="SliverHorn@sliver_horn@qq.com"
 
 COPY .docker-compose/nginx/conf.d/my.conf /etc/nginx/conf.d/my.conf

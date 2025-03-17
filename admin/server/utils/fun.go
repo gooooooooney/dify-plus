@@ -53,15 +53,18 @@ func InStringArray(value string, array []string) (isIn bool) {
 // @return: err error, conf config.Server
 func AddAsteriskToString(s string) string {
 	// 计算要插入的星号数量
-	numStars := int(math.Ceil(float64(len(s)) / 5))
+	num := 0
 	stars := ""
-	for i := 0; i < numStars; i++ {
-		stars += "*"
-	}
-
 	// 计算插入位置
 	insertPos := len(s) / 2
-
+	numStars := int(math.Ceil(float64(len(s)) / 5))
+	for i := 0; i < numStars; i++ {
+		if num > 8 {
+			continue
+		}
+		stars += "*"
+		num += 1
+	}
 	// 插入星号
 	result := s[:insertPos] + stars + s[insertPos:]
 	return result

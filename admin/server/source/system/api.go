@@ -200,6 +200,11 @@ func (i *initApi) InitializeData(ctx context.Context) (context.Context, error) {
 		{ApiGroup: "盖亚报表", Method: "GET", Path: "/gaia/dashboard/getAppQuotaRankingData", Description: "分页获取【应用】配额排名数据"},
 		{ApiGroup: "盖亚报表", Method: "GET", Path: "/gaia/dashboard/getAccountQuotaRankingData", Description: "获取账户配额排名数据"},
 		{ApiGroup: "系统用户", Method: "POST", Path: "/user/sync", Description: "同步用户列表"},
+
+		// Extend Start: system integration
+		{ApiGroup: "应用集成配置", Method: "GET", Path: "/gaia/system/dingtalk", Description: "获取钉钉系统配置"},
+		{ApiGroup: "应用集成配置", Method: "POST", Path: "/gaia/system/dingtalk", Description: "设置钉钉系统配置"},
+		// Extend Stop: system integration
 	}
 	if err := db.Create(&entities).Error; err != nil {
 		return ctx, errors.Wrap(err, sysModel.SysApi{}.TableName()+"表数据初始化失败!")

@@ -20,5 +20,6 @@ func initBizRouter(routers ...*gin.RouterGroup) {
 		gaiaRouter.InitProvidersRouter(privateGroup, publicGroup)
 		gaiaRouter.InitTenantsRouter(privateGroup, publicGroup)
 		gaiaRouter.InitTestRouter(privateGroup, publicGroup)
+		gaiaRouter.InitSystemRouter(privateGroup)
 	}
 }
